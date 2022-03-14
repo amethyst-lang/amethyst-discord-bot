@@ -3,6 +3,8 @@ global syscall_
 extern main
 
 _start:
+    pop rsi
+    mov rdi, rsp
     call main
     mov rdi, rax
 exit:
@@ -28,6 +30,6 @@ cont:
     mov rdx, rcx
     mov r10, r8
     mov r8, r9
-    mov r9, [rsp - 16]
+    mov r9, [rsp + 8]
     syscall
     ret
