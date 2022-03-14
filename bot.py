@@ -35,7 +35,13 @@ async def run(ctx):
                     await ctx.reply(embed=embed)
                 except subprocess.TimeoutExpired:
                     await ctx.reply(embed=discord.Embed(title='Process timed out', colour=0x0000ff))
-                os.remove(filename)
-                os.remove(filename + '.o')
+                try:
+                    os.remove(filename)
+                except:
+                    pass
+                try:
+                    os.remove(filename + '.o')
+                except:
+                    pass
 
 bot.run(os.getenv("TOKEN"))
