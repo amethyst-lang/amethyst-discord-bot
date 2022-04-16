@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 import discord
@@ -20,13 +21,18 @@ async def run(ctx):
         await ctx.reply('Encase Amethyst code with a code block')
     else:
         async with ctx.typing():
-            filename = 'exe_%i' % ctx.message.id
+            d = 'msg_%i' % ctx.message.id
+            os.mkdir(d)
+            filename = '%s/a.out' % d
             child = subprocess.run(['./bin/amethyst', '/dev/stdin', filename], input=code, text=True, capture_output=True)
             if child.returncode != 0:
                 await ctx.reply(embed=discord.Embed(title='Error encountered when compiling', description='```ansi\n%s\n```' % child.stderr, colour=0xff0000))
+                shutil.rmtree(d)
             else:
+                shutil.copy('Dockerfile', d)
                 try:
-                    child = subprocess.run(['./' + filename], text=True, capture_output=True, timeout=10)
+                    subprocess.run(['docker', 'build', '-t', '%s:latest' % d, d])
+                    child = subprocess.run(['docker', 'run', d], text=True, capture_output=True, timeout=10)
                     embed = discord.Embed(title='Process ended with error code `%i`' % child.returncode, colour=0x00ff00)
                     if child.stdout:
                         embed.add_field(name='STDOUT', value='```ansi\n%s\n```' % child.stdout.replace('`', "'"), inline=False)
@@ -35,13 +41,8 @@ async def run(ctx):
                     await ctx.reply(embed=embed)
                 except subprocess.TimeoutExpired:
                     await ctx.reply(embed=discord.Embed(title='Process timed out', colour=0x0000ff))
-                try:
-                    os.remove(filename)
-                except:
-                    pass
-                try:
-                    os.remove(filename + '.o')
-                except:
-                    pass
+                finally:
+                    shutil.rmtree(d)
+                    subprocess.run(['docker', 'image', 'rm', '--force', d])
 
 bot.run(os.getenv("TOKEN"))
